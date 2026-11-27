@@ -887,12 +887,12 @@ button {
 
 .view-nav {
   display: flex;
-  gap: 6px;
-  margin-bottom: 18px;
-  padding: 5px;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 7px;
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 14px;
   overflow-x: auto;
 }
 
@@ -900,17 +900,30 @@ button {
   flex: 0 0 auto;
   border: 0;
   background: transparent;
-  padding: 8px 14px;
-  border-radius: 8px;
-  font-size: 13px;
-  color: var(--muted);
+  padding: 11px 20px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4c5468;
   white-space: nowrap;
+  transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.view-nav button:hover {
+  background: #f4f5fb;
+  color: var(--brand);
 }
 
 .view-nav button.active {
-  background: var(--brand-soft);
-  color: var(--brand);
+  background: var(--brand);
+  color: #fff;
   font-weight: 600;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+}
+
+.view-nav button.active:hover {
+  background: #4338ca;
+  color: #fff;
 }
 
 .view-panel {

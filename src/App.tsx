@@ -27,12 +27,48 @@ import GrowthView from './views/GrowthView'
 
 type ViewId = 'checker' | 'calendar' | 'alerts' | 'analytics' | 'growth'
 
-const VIEWS: Array<{ id: ViewId; label: string }> = [
-  { id: 'checker', label: '违禁词检测' },
-  { id: 'calendar', label: '发布日历' },
-  { id: 'alerts', label: '互动提醒' },
-  { id: 'analytics', label: '数据看板' },
-  { id: 'growth', label: '增长实验室' },
+const VIEWS: Array<{
+  id: ViewId
+  label: string
+  eyebrow: string
+  title: string
+  description: string
+}> = [
+  {
+    id: 'checker',
+    label: '违禁词检测',
+    eyebrow: 'COMPLIANCE CHECK',
+    title: '违禁词检测',
+    description: '发布前扫一遍文案，筛出极限词、虚假宣传、引流诱导等风险表达。',
+  },
+  {
+    id: 'calendar',
+    label: '发布日历',
+    eyebrow: 'PUBLISHING SCHEDULE',
+    title: '发布日历',
+    description: '把多账号、多平台的内容排进日历，提前发现时间冲突。',
+  },
+  {
+    id: 'alerts',
+    label: '互动提醒',
+    eyebrow: 'AUDIENCE SIGNALS',
+    title: '互动提醒',
+    description: '集中查看评论和私信，第一时间发现需要跟进的负面反馈。',
+  },
+  {
+    id: 'analytics',
+    label: '数据看板',
+    eyebrow: 'PERFORMANCE',
+    title: '数据看板',
+    description: '把各平台的数据汇总到一处，快速看清内容和渠道表现。',
+  },
+  {
+    id: 'growth',
+    label: '增长实验室',
+    eyebrow: 'GROWTH LAB',
+    title: '增长实验室',
+    description: '从选题、爆款结构到本地草稿与转化归因，补齐增长链路。',
+  },
 ]
 
 const STORAGE_KEY = 'operations-publishing-hub.custom-words'
@@ -190,6 +226,7 @@ function App() {
   )
 
   const platformLabel = PLATFORMS.find((item) => item.id === platform)?.label ?? '通用合规'
+  const currentView = VIEWS.find((item) => item.id === view) ?? VIEWS[0]
   const batchCount = parseBatch(batchText).length
 
   useEffect(() => {
@@ -515,9 +552,9 @@ function App() {
       <main className="page">
         <section className="hero">
           <div className="hero-left">
-            <div className="eyebrow">COMPLIANCE CHECK</div>
-            <h1>违禁词检测</h1>
-            <p>发布前扫一遍文案，筛出极限词、虚假宣传、引流诱导等风险表达。</p>
+            <div className="eyebrow">{currentView.eyebrow}</div>
+            <h1>{currentView.title}</h1>
+            <p>{currentView.description}</p>
           </div>
           <div className="hero-right">
             <div className="stat-tile">
