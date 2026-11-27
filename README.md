@@ -9,6 +9,10 @@ A lightweight, browser-based pre-publish compliance workspace for content teams.
 - **Four platform profiles**: General compliance, Xiaohongshu, Douyin, and Xianyu. Switching profiles loads the matching rule set.
 - **Nine built-in categories**: advertising superlatives, exaggerated claims, medical/health claims, finance/investment claims, engagement bait, vulgar language, and platform-specific rules for Xiaohongshu, Douyin, and Xianyu.
 - **Custom dictionary**: one phrase per line, up to 1,000 lines and 100 characters per phrase. Saved in `localStorage` on your machine.
+- **Batch checking**: paste blank-line-separated text blocks or import a CSV/TXT file, with a per-item risk summary.
+- **Check history**: recent checks are saved locally and can be restored or exported as CSV.
+- **Dictionary portability**: import and export custom dictionaries as JSON/TXT.
+- **One-click replacements**: apply suggested wording to matched words with a single click.
 - **Evasion-tolerant matching**: normalizes full-width characters, letter case, whitespace and common separators before matching.
 - **Longest-match-first detection**: avoids double-counting overlapping words.
 - **Readable results**: in-place highlighting, risk level, hit counts, first-occurrence position, suggested replacements, and a copyable plain-text report.

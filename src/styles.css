@@ -756,6 +756,156 @@ button {
   z-index: 20;
 }
 
+.mode-switch {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #f5f6f9;
+}
+
+.mode-switch button {
+  border: 0;
+  background: transparent;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.mode-switch button.active {
+  background: #fff;
+  color: var(--brand);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(27, 32, 48, 0.08);
+}
+
+.action-hint {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.custom-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.replace-btn {
+  margin-left: auto;
+  border: 1px solid #bfe8d2;
+  background: #f1fbf5;
+  color: #26845a;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.replace-btn:hover {
+  background: #e4f7ec;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.risk-badge.small {
+  padding: 4px 8px;
+  font-size: 11px;
+  flex: 0 0 auto;
+}
+
+.risk-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.risk-dot.risk-high { background: #e11d48; }
+.risk-dot.risk-medium { background: #f59e0b; }
+.risk-dot.risk-low { background: #34a774; }
+
+.batch-list,
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.batch-item,
+.history-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  text-align: left;
+  color: var(--ink);
+}
+
+.batch-item:hover,
+.history-item:hover {
+  border-color: #c8ccf8;
+  background: #fafaff;
+}
+
+.batch-index {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--brand);
+  flex: 0 0 auto;
+}
+
+.batch-text,
+.history-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.batch-count,
+.history-count {
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
+}
+
+.history-meta {
+  font-size: 11px;
+  color: var(--muted);
+  flex: 0 0 auto;
+}
+
+.history-panel {
+  margin-top: 18px;
+  padding: 20px 24px 24px;
+}
+
+.history-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.history-empty {
+  padding: 28px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+}
+
 @media (max-width: 1080px) {
   .workspace {
     grid-template-columns: minmax(0, 1fr);
