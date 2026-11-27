@@ -94,27 +94,6 @@ button {
   margin-top: 2px;
 }
 
-.privacy-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 12px;
-  border: 1px solid #dcf5e8;
-  background: #f1fbf5;
-  color: #26845a;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.privacy-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #34c77b;
-  box-shadow: 0 0 0 3px rgba(52, 199, 123, 0.16);
-}
-
 .page {
   max-width: 1400px;
   margin: 0 auto;

@@ -509,12 +509,6 @@ function App() {
               <div className="brand-subtitle">内容合规 · 发布前自检</div>
             </div>
           </div>
-          <div className="topbar-meta">
-            <span className="privacy-pill">
-              <span className="privacy-dot" />
-              本地检测 · 文案不上传
-            </span>
-          </div>
         </div>
       </header>
 
