@@ -13,6 +13,11 @@ A lightweight, browser-based pre-publish compliance workspace for content teams.
 - **Check history**: recent checks are saved locally and can be restored or exported as CSV.
 - **Dictionary portability**: import and export custom dictionaries as JSON/TXT.
 - **One-click replacements**: apply suggested wording to matched words with a single click.
+- **Pre-publish checklist**: platform-specific checks for links, hashtags, image text and qualifications, with local copy templates and one-click platform adaptation.
+- **Publishing calendar**: multi-account scheduling with status tracking and conflict warnings.
+- **Interaction alerts**: collect comments and messages with automatic negative-feedback flagging.
+- **Analytics dashboard**: import CSV exports and review totals plus per-platform breakdowns.
+- **Growth lab**: keyword tracking, viral pattern analysis, local draft generation with a built-in compliance pre-check, and conversion attribution.
 - **Evasion-tolerant matching**: normalizes full-width characters, letter case, whitespace and common separators before matching.
 - **Longest-match-first detection**: avoids double-counting overlapping words.
 - **Readable results**: in-place highlighting, risk level, hit counts, first-occurrence position, suggested replacements, and a copyable plain-text report.

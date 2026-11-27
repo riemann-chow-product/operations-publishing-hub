@@ -17,6 +17,23 @@ import {
   type DetectResult,
   type Hit,
 } from './lib/detector'
+import ChecklistPanel from './components/ChecklistPanel'
+import TemplatePanel from './components/TemplatePanel'
+import { adaptCopy } from './lib/adapter'
+import CalendarView from './views/CalendarView'
+import AlertsView from './views/AlertsView'
+import AnalyticsView from './views/AnalyticsView'
+import GrowthView from './views/GrowthView'
+
+type ViewId = 'checker' | 'calendar' | 'alerts' | 'analytics' | 'growth'
+
+const VIEWS: Array<{ id: ViewId; label: string }> = [
+  { id: 'checker', label: '违禁词检测' },
+  { id: 'calendar', label: '发布日历' },
+  { id: 'alerts', label: '互动提醒' },
+  { id: 'analytics', label: '数据看板' },
+  { id: 'growth', label: '增长实验室' },
+]
 
 const STORAGE_KEY = 'operations-publishing-hub.custom-words'
 const HISTORY_KEY = 'operations-publishing-hub.history'
@@ -148,6 +165,7 @@ function DownloadIcon() {
 }
 
 function App() {
+  const [view, setView] = useState<ViewId>('checker')
   const [mode, setMode] = useState<Mode>('single')
   const [platform, setPlatform] = useState<PlatformId>('general')
   const [text, setText] = useState('')
@@ -337,6 +355,37 @@ function App() {
     setNotice(`已将「${hit.word}」替换为「${replacement}」`)
   }
 
+  function adaptCurrent() {
+    const source = mode === 'single' ? text : batchText
+    if (!source.trim()) {
+      setNotice('请先输入需要适配的文案')
+      return
+    }
+    const adapted = adaptCopy(source, platform)
+    setMode('single')
+    setText(adapted)
+    setResult(detectText(adapted))
+    setBatchItems([])
+    setNotice('已按当前平台适配并完成检测')
+  }
+
+  function loadTemplate(content: string) {
+    setMode('single')
+    setText(content)
+    setResult(detectText(content))
+    setBatchItems([])
+    setNotice('模板已载入')
+  }
+
+  function sendToChecker(content: string) {
+    setView('checker')
+    setMode('single')
+    setText(content)
+    setResult(detectText(content))
+    setBatchItems([])
+    setNotice('草稿已送到检测台')
+  }
+
   async function copyReport() {
     if (!result) return
     const lines = buildReport(result)
@@ -488,6 +537,21 @@ function App() {
           </div>
         </section>
 
+        <nav className="view-nav" aria-label="工作台模块">
+          {VIEWS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={view === item.id ? 'active' : ''}
+              onClick={() => setView(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        {view === 'checker' && (
+        <>
         <section className="panel config-panel">
           <div className="config-row">
             <div className="config-label">检测平台</div>
@@ -662,6 +726,13 @@ function App() {
                 </div>
               )}
             </div>
+
+            <ChecklistPanel
+              platform={platform}
+              text={mode === 'single' ? text : batchText}
+              onAdapt={adaptCurrent}
+            />
+            <TemplatePanel currentText={mode === 'single' ? text : batchText} onLoad={loadTemplate} />
           </div>
 
           <div className="panel result-panel">
@@ -794,6 +865,13 @@ function App() {
             </div>
           )}
         </section>
+        </>
+        )}
+
+        {view === 'calendar' && <CalendarView />}
+        {view === 'alerts' && <AlertsView />}
+        {view === 'analytics' && <AnalyticsView />}
+        {view === 'growth' && <GrowthView onCheck={detectText} onSendToChecker={sendToChecker} />}
 
         <footer className="footer">
           检测结果基于内置规则和自定义词库，仅供发布前参考，最终以各平台最新审核规则为准。
