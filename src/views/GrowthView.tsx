@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { PLATFORMS, type PlatformId } from '../data/words'
 import type { DetectResult } from '../lib/detector'
 import { readJson, writeJson } from '../lib/storage'
+import { readCalendarPosts } from './CalendarView'
 
 const KEYWORDS_KEY = 'operations-publishing-hub.keywords'
 
@@ -61,7 +62,9 @@ export default function GrowthView({ onCheck, onSendToChecker }: Props) {
   const [notice, setNotice] = useState('')
   const attributionFileRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => writeJson(KEYWORDS_KEY, keywords), [keywords])
+  useEffect(() => {
+    writeJson(KEYWORDS_KEY, keywords)
+  }, [keywords])
   useEffect(() => {
     if (!notice) return
     const timer = window.setTimeout(() => setNotice(''), 2600)
@@ -260,15 +263,19 @@ export default function GrowthView({ onCheck, onSendToChecker }: Props) {
           ) : (
             <div className="data-table-wrap">
               <table className="data-table">
-                <thead><tr><th>内容</th><th>转化</th><th>收入</th></tr></thead>
+                <thead><tr><th>内容</th><th>转化</th><th>收入</th><th>排期</th></tr></thead>
                 <tbody>
-                  {attribution.map((row, index) => (
-                    <tr key={`${row.content}-${index}`}>
-                      <td>{row.content}</td>
-                      <td>{row.conversions}</td>
-                      <td>¥{row.revenue.toLocaleString('zh-CN')}</td>
-                    </tr>
-                  ))}
+                  {attribution.map((row, index) => {
+                    const linked = readCalendarPosts().find((post) => post.title === row.content.trim())
+                    return (
+                      <tr key={`${row.content}-${index}`}>
+                        <td>{row.content}</td>
+                        <td>{row.conversions}</td>
+                        <td>¥{row.revenue.toLocaleString('zh-CN')}</td>
+                        <td>{linked ? `${linked.date} · 已关联` : '—'}</td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

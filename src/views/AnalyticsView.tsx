@@ -1,5 +1,6 @@
-import { useRef, useState, type ChangeEvent } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { parseCsvRows } from '../lib/csv'
+import { readCalendarPosts } from './CalendarView'
 
 interface AnalyticsRow {
   platform: string
@@ -54,8 +55,13 @@ function parseAnalyticsCsv(raw: string): AnalyticsRow[] {
 
 export default function AnalyticsView() {
   const [rows, setRows] = useState<AnalyticsRow[]>([])
+  const [scheduledTitles, setScheduledTitles] = useState<Set<string>>(() => new Set())
   const fileRef = useRef<HTMLInputElement>(null)
   const [notice, setNotice] = useState('')
+
+  useEffect(() => {
+    setScheduledTitles(new Set(readCalendarPosts().map((post) => post.title.trim())))
+  }, [rows])
 
   const totals = rows.reduce(
     (acc, row) => ({
@@ -151,7 +157,7 @@ export default function AnalyticsView() {
             <div className="data-table-wrap">
               <table className="data-table">
                 <thead>
-                  <tr><th>标题</th><th>平台</th><th>浏览</th><th>点赞</th><th>评论</th><th>转化</th></tr>
+                  <tr><th>标题</th><th>平台</th><th>浏览</th><th>点赞</th><th>评论</th><th>转化</th><th>排期</th></tr>
                 </thead>
                 <tbody>
                   {rows.map((row, index) => (
@@ -162,6 +168,7 @@ export default function AnalyticsView() {
                       <td>{row.likes.toLocaleString('zh-CN')}</td>
                       <td>{row.comments.toLocaleString('zh-CN')}</td>
                       <td>{row.conversions.toLocaleString('zh-CN')}</td>
+                      <td>{scheduledTitles.has(row.title.trim()) ? '已关联' : '—'}</td>
                     </tr>
                   ))}
                 </tbody>

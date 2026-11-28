@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { readJson, writeJson } from '../lib/storage'
 
 const TEMPLATE_KEY = 'operations-publishing-hub.templates'
 
@@ -9,14 +10,8 @@ interface Template {
 }
 
 function readTemplates(): Template[] {
-  try {
-    const raw = localStorage.getItem(TEMPLATE_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
+  const parsed = readJson<unknown>(TEMPLATE_KEY, [])
+  return Array.isArray(parsed) ? (parsed as Template[]) : []
 }
 
 interface Props {
@@ -29,11 +24,7 @@ export default function TemplatePanel({ currentText, onLoad }: Props) {
   const [name, setName] = useState('')
 
   useEffect(() => {
-    try {
-      localStorage.setItem(TEMPLATE_KEY, JSON.stringify(templates))
-    } catch {
-      // 超出配额时忽略
-    }
+    writeJson(TEMPLATE_KEY, templates)
   }, [templates])
 
   function save() {

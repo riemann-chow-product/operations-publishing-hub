@@ -835,6 +835,37 @@ button {
   background: #fafaff;
 }
 
+.history-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  color: inherit;
+  padding: 0;
+  cursor: pointer;
+}
+
+.backup-row .backup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.backup-row .backup-actions span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.linked-check {
+  color: var(--brand) !important;
+  font-weight: 600;
+}
+
 .batch-index {
   font-size: 12px;
   font-weight: 600;
