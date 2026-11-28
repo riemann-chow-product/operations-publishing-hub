@@ -28,13 +28,16 @@ export interface TextSegment {
   hit?: Hit
 }
 
+export type RiskLevel = 'high' | 'medium' | 'low'
+
 export interface DetectResult {
   hits: Hit[]
   segments: TextSegment[]
   total: number
   unique: number
-  riskLevel: 'high' | 'medium' | 'low'
+  riskLevel: RiskLevel
   riskLabel: string
+  riskScore: number
   scannedWords: number
   textLength: number
 }
@@ -84,6 +87,35 @@ function normalize(input: string): NormalizedText {
   }
 
   return { value, map }
+}
+
+/** Category weights: legal/medical/financial/vulgar risks outweigh soft wording. */
+const CATEGORY_WEIGHT: Record<CategoryId, number> = {
+  extreme: 3,
+  exaggerate: 2,
+  medical: 3,
+  finance: 3,
+  induce: 2,
+  vulgar: 3,
+  xhs: 1.5,
+  douyin: 1.5,
+  xianyu: 1.5,
+  custom: 1,
+}
+
+/** Weighted hit density per 1,000 characters, plus a small flat component. */
+export function scoreRisk(hits: Hit[], textLength: number): { riskLevel: RiskLevel; riskLabel: string; riskScore: number } {
+  const weighted = hits.reduce((sum, hit) => sum + hit.count * (CATEGORY_WEIGHT[hit.category] ?? 1), 0)
+  const density = (weighted / Math.max(textLength, 1)) * 1000
+  const riskScore = Math.round((weighted + density * 0.5) * 10) / 10
+  const riskLevel: RiskLevel = riskScore >= 24 ? 'high' : riskScore >= 8 ? 'medium' : 'low'
+  const riskLabel = riskLevel === 'high' ? '高风险' : riskLevel === 'medium' ? '中风险' : '低风险'
+  return { riskLevel, riskLabel, riskScore }
+}
+
+/** Expose normalization so other modules can match obfuscated text the same way. */
+export function normalizeText(input: string): string {
+  return normalize(input).value
 }
 
 function buildEntries(options: DetectOptions): WordSource[] {
@@ -199,8 +231,7 @@ export function detectWords(options: DetectOptions): DetectResult {
   }
 
   const total = hits.reduce((sum, hit) => sum + hit.count, 0)
-  const riskLevel: DetectResult['riskLevel'] = total >= 8 ? 'high' : total >= 3 ? 'medium' : 'low'
-  const riskLabel = riskLevel === 'high' ? '高风险' : riskLevel === 'medium' ? '中风险' : '低风险'
+  const { riskLevel, riskLabel, riskScore } = scoreRisk(hits, text.length)
 
   return {
     hits,
@@ -209,6 +240,7 @@ export function detectWords(options: DetectOptions): DetectResult {
     unique: hits.length,
     riskLevel,
     riskLabel,
+    riskScore,
     scannedWords: entries.length,
     textLength: text.length,
   }

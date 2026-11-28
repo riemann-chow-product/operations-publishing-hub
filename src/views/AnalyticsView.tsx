@@ -1,4 +1,5 @@
 import { useRef, useState, type ChangeEvent } from 'react'
+import { parseCsvRows } from '../lib/csv'
 
 interface AnalyticsRow {
   platform: string
@@ -15,24 +16,40 @@ function number(value: string | undefined): number {
 }
 
 function parseAnalyticsCsv(raw: string): AnalyticsRow[] {
-  const lines = raw.replace(/\r/g, '').split('\n').filter((line) => line.trim())
-  if (lines.length < 2) return []
+  const rows = parseCsvRows(raw)
+  if (rows.length < 2) return []
 
-  const header = lines[0].toLowerCase()
-  const hasHeader = header.includes('platform') || header.includes('平台') || header.includes('title')
-  const rows = hasHeader ? lines.slice(1) : lines
+  const header = rows[0].map((cell) => cell.trim().toLowerCase())
+  const hasHeader = header.some((cell) =>
+    ['platform', '平台', 'title', 'views', '浏览'].some((key) => cell.includes(key)),
+  )
+  const data = hasHeader ? rows.slice(1) : rows
 
-  return rows.map((line) => {
-    const [platform = '', title = '', views = '0', likes = '0', comments = '0', conversions = '0'] = line.split(',')
-    return {
-      platform: platform.trim().replace(/^"|"$/g, ''),
-      title: title.trim().replace(/^"|"$/g, ''),
-      views: number(views),
-      likes: number(likes),
-      comments: number(comments),
-      conversions: number(conversions),
-    }
-  }).filter((row) => row.title)
+  const findColumn = (keys: string[], fallback: number): number => {
+    if (!hasHeader) return fallback
+    const index = header.findIndex((cell) => keys.some((key) => cell.includes(key)))
+    return index >= 0 ? index : fallback
+  }
+
+  const columns = {
+    platform: findColumn(['platform', '平台'], 0),
+    title: findColumn(['title', '标题'], 1),
+    views: findColumn(['views', '浏览'], 2),
+    likes: findColumn(['likes', '点赞'], 3),
+    comments: findColumn(['comments', '评论'], 4),
+    conversions: findColumn(['conversions', '转化'], 5),
+  }
+
+  return data
+    .map((cells) => ({
+      platform: (cells[columns.platform] ?? '').trim(),
+      title: (cells[columns.title] ?? '').trim(),
+      views: number(cells[columns.views]),
+      likes: number(cells[columns.likes]),
+      comments: number(cells[columns.comments]),
+      conversions: number(cells[columns.conversions]),
+    }))
+    .filter((row) => row.title)
 }
 
 export default function AnalyticsView() {

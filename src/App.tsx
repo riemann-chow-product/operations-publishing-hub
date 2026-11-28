@@ -14,9 +14,11 @@ import {
   detectWords,
   getCategoryLabel,
   parseCustomWords,
+  scoreRisk,
   type DetectResult,
   type Hit,
 } from './lib/detector'
+import { parseCsvRows } from './lib/csv'
 import ChecklistPanel from './components/ChecklistPanel'
 import TemplatePanel from './components/TemplatePanel'
 import { adaptCopy } from './lib/adapter'
@@ -130,17 +132,17 @@ function parseBatch(raw: string): string[] {
 }
 
 function parseCsv(raw: string): string[] {
-  const lines = raw.replace(/\r/g, '').split('\n').filter((line) => line.trim())
-  if (lines.length === 0) return []
+  const rows = parseCsvRows(raw)
+  if (rows.length === 0) return []
 
-  const header = lines[0].toLowerCase()
-  if (header.includes('text') || header.includes('content') || header.includes('文案')) {
-    lines.shift()
-  }
+  const header = rows[0].map((cell) => cell.trim().toLowerCase())
+  const textIndex = header.findIndex(
+    (cell) => cell.includes('text') || cell.includes('content') || cell.includes('文案'),
+  )
+  const dataRows = textIndex >= 0 ? rows.slice(1) : rows
+  const columnIndex = textIndex >= 0 ? textIndex : 0
 
-  return lines
-    .map((line) => line.replace(/^"|"$/g, '').replace(/""/g, '"').trim())
-    .filter(Boolean)
+  return dataRows.map((cells) => (cells[columnIndex] ?? '').trim()).filter(Boolean)
 }
 
 function downloadFile(name: string, content: string, type: string) {
@@ -321,16 +323,16 @@ function App() {
     const results = items.map((item) => ({ text: item, result: detectText(item)! }))
     const total = results.reduce((sum, item) => sum + item.result.total, 0)
     const unique = results.reduce((sum, item) => sum + item.result.unique, 0)
-    const riskLevel: DetectResult['riskLevel'] = total >= 8 ? 'high' : total >= 3 ? 'medium' : 'low'
+    const allHits = results.flatMap((item) => item.result.hits)
+    const textLength = items.reduce((sum, item) => sum + item.length, 0)
     const summary: DetectResult = {
-      hits: [],
+      hits: allHits,
       segments: [],
       total,
       unique,
-      riskLevel,
-      riskLabel: riskLevel === 'high' ? '高风险' : riskLevel === 'medium' ? '中风险' : '低风险',
+      ...scoreRisk(allHits, textLength),
       scannedWords: results[0]?.result.scannedWords ?? 0,
-      textLength: items.reduce((sum, item) => sum + item.length, 0),
+      textLength,
     }
 
     setBatchItems(results)
@@ -378,9 +380,14 @@ function App() {
 
   function applySuggestion(hit: Hit) {
     const replacement = firstReplacement(hit.suggestion)
-    if (!replacement) return
+    if (!replacement || hit.positions.length === 0) return
 
-    const next = text.split(hit.word).join(replacement)
+    // Replace only the matched positions, right to left so earlier offsets stay valid.
+    let next = text
+    for (const position of [...hit.positions].sort((a, b) => b.start - a.start)) {
+      next = next.slice(0, position.start) + replacement + next.slice(position.end)
+    }
+
     if (next === text) {
       setNotice('未找到可替换的文本')
       return
@@ -389,7 +396,7 @@ function App() {
     setText(next)
     const checked = detectText(next)
     if (checked) setResult(checked)
-    setNotice(`已将「${hit.word}」替换为「${replacement}」`)
+    setNotice(`已将 ${hit.positions.length} 处「${hit.word}」替换为「${replacement}」`)
   }
 
   function adaptCurrent() {
