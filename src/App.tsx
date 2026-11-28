@@ -22,6 +22,14 @@ import { parseCsvRows } from './lib/csv'
 import ChecklistPanel from './components/ChecklistPanel'
 import TemplatePanel from './components/TemplatePanel'
 import { adaptCopy } from './lib/adapter'
+import {
+  STORAGE_ERROR_EVENT,
+  STORAGE_KEYS,
+  exportWorkspace,
+  importWorkspace,
+  makeContentId,
+  writeJson,
+} from './lib/storage'
 import CalendarView from './views/CalendarView'
 import AlertsView from './views/AlertsView'
 import AnalyticsView from './views/AnalyticsView'
@@ -73,20 +81,29 @@ const VIEWS: Array<{
   },
 ]
 
-const STORAGE_KEY = 'operations-publishing-hub.custom-words'
-const HISTORY_KEY = 'operations-publishing-hub.history'
+const STORAGE_KEY = STORAGE_KEYS.customWords
+const HISTORY_KEY = STORAGE_KEYS.history
 const MAX_HISTORY = 50
 
 type Mode = 'single' | 'batch'
 
 interface HistoryItem {
   id: string
+  contentId: string
   at: string
   platform: PlatformId
   text: string
   total: number
   unique: number
   riskLevel: DetectResult['riskLevel']
+  riskLabel: string
+}
+
+interface CalendarPrefill {
+  contentId: string
+  title: string
+  content: string
+  platform: PlatformId
   riskLabel: string
 }
 
@@ -212,11 +229,13 @@ function App() {
   const [result, setResult] = useState<DetectResult | null>(null)
   const [batchItems, setBatchItems] = useState<BatchItem[]>([])
   const [history, setHistory] = useState<HistoryItem[]>(readHistory)
+  const [calendarPrefill, setCalendarPrefill] = useState<CalendarPrefill | null>(null)
   const [notice, setNotice] = useState('')
   const [focusedWord, setFocusedWord] = useState('')
   const [showCustom, setShowCustom] = useState(true)
   const dictionaryInputRef = useRef<HTMLInputElement>(null)
   const csvInputRef = useRef<HTMLInputElement>(null)
+  const backupInputRef = useRef<HTMLInputElement>(null)
 
   const custom = useMemo(() => parseCustomWords(customRaw), [customRaw])
   const availableCategories = useMemo(
@@ -246,17 +265,19 @@ function App() {
     try {
       localStorage.setItem(STORAGE_KEY, customRaw)
     } catch {
-      // 隐私模式下无法写入，忽略即可
+      window.dispatchEvent(new CustomEvent(STORAGE_ERROR_EVENT, { detail: { key: STORAGE_KEY } }))
     }
   }, [customRaw])
 
   useEffect(() => {
-    try {
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(history))
-    } catch {
-      // 超出配额时忽略，不影响检测
-    }
+    writeJson(HISTORY_KEY, history)
   }, [history])
+
+  useEffect(() => {
+    const handleStorageError = () => setNotice('本地存储写入失败，当前数据可能无法保存')
+    window.addEventListener(STORAGE_ERROR_EVENT, handleStorageError)
+    return () => window.removeEventListener(STORAGE_ERROR_EVENT, handleStorageError)
+  }, [])
 
   useEffect(() => {
     if (!notice) return
@@ -280,6 +301,7 @@ function App() {
   function addHistory(entries: Array<{ text: string; result: DetectResult }>) {
     const items: HistoryItem[] = entries.map(({ text: entryText, result: entryResult }) => ({
       id: makeId(),
+      contentId: makeContentId(),
       at: new Date().toLocaleString('zh-CN', { hour12: false }),
       platform,
       text: entryText,
@@ -535,11 +557,41 @@ function App() {
   function restoreHistory(item: HistoryItem) {
     setMode('single')
     setText(item.text)
-    const checked = detectText(item.text)
-    setResult(checked)
+    setResult(detectText(item.text))
     setBatchItems([])
     setFocusedWord('')
     setNotice('已载入该条检测记录')
+  }
+
+  function scheduleHistory(item: HistoryItem) {
+    setCalendarPrefill({
+      contentId: item.contentId,
+      title: item.text.slice(0, 24),
+      content: item.text,
+      platform: item.platform,
+      riskLabel: item.riskLabel,
+    })
+    setView('calendar')
+    setNotice('已带入发布日历，补充账号和时间即可排期')
+  }
+
+  function exportWorkspaceBackup() {
+    const payload = JSON.stringify(exportWorkspace(), null, 2)
+    downloadFile('operations-publishing-hub-backup.json', payload, 'application/json')
+    setNotice('已导出全部本地数据')
+  }
+
+  function importBackupFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const outcome = importWorkspace(String(reader.result ?? ''))
+      setNotice(outcome.message)
+      if (outcome.ok) window.setTimeout(() => window.location.reload(), 600)
+    }
+    reader.readAsText(file)
+    event.target.value = ''
   }
 
   return (
@@ -622,6 +674,22 @@ function App() {
                   onClick={() => toggleCategory(category.id)}
                 />
               ))}
+            </div>
+          </div>
+
+          <div className="config-row backup-row">
+            <div className="config-label">数据备份</div>
+            <div className="backup-actions">
+              <button type="button" className="btn btn-secondary btn-small" onClick={exportWorkspaceBackup}>
+                <DownloadIcon />
+                导出全部数据
+              </button>
+              <button type="button" className="btn btn-ghost btn-small" onClick={() => backupInputRef.current?.click()}>
+                <UploadIcon />
+                导入备份
+              </button>
+              <input ref={backupInputRef} type="file" accept=".json,application/json" onChange={importBackupFile} hidden />
+              <span>包含词库、历史、排期、提醒、模板与关键词</span>
             </div>
           </div>
         </section>
@@ -893,12 +961,17 @@ function App() {
           ) : (
             <div className="history-list">
               {history.slice(0, 8).map((item) => (
-                <button key={item.id} type="button" className="history-item" onClick={() => restoreHistory(item)}>
-                  <span className={`risk-dot risk-${item.riskLevel}`} />
-                  <span className="history-text">{item.text}</span>
-                  <span className="history-meta">{item.at} · {item.platform}</span>
-                  <span className="history-count">{item.total} 处</span>
-                </button>
+                <div key={item.id} className="history-item">
+                  <button type="button" className="history-main" onClick={() => restoreHistory(item)}>
+                    <span className={`risk-dot risk-${item.riskLevel}`} />
+                    <span className="history-text">{item.text}</span>
+                    <span className="history-meta">{item.at} · {item.platform}</span>
+                    <span className="history-count">{item.total} 处</span>
+                  </button>
+                  <button type="button" className="btn btn-ghost btn-small" onClick={() => scheduleHistory(item)}>
+                    加入排期
+                  </button>
+                </div>
               ))}
             </div>
           )}
@@ -906,7 +979,9 @@ function App() {
         </>
         )}
 
-        {view === 'calendar' && <CalendarView />}
+        {view === 'calendar' && (
+          <CalendarView prefill={calendarPrefill} onPrefillConsumed={() => setCalendarPrefill(null)} />
+        )}
         {view === 'alerts' && <AlertsView />}
         {view === 'analytics' && <AnalyticsView />}
         {view === 'growth' && <GrowthView onCheck={detectText} onSendToChecker={sendToChecker} />}

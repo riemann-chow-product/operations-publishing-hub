@@ -27,7 +27,9 @@ export default function AlertsView() {
   const [content, setContent] = useState('')
   const [filter, setFilter] = useState<'all' | 'negative' | 'open'>('all')
 
-  useEffect(() => writeJson(KEY, alerts), [alerts])
+  useEffect(() => {
+    writeJson(KEY, alerts)
+  }, [alerts])
 
   const visible = alerts.filter((item) =>
     filter === 'negative' ? item.negative : filter === 'open' ? !item.handled : true,

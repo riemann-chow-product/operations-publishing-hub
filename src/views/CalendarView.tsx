@@ -6,6 +6,7 @@ const KEY = 'operations-publishing-hub.calendar'
 
 interface Post {
   id: string
+  contentId?: string
   account: string
   platform: PlatformId
   date: string
@@ -13,6 +14,19 @@ interface Post {
   title: string
   content: string
   status: 'draft' | 'scheduled' | 'published'
+  sourceRisk?: string
+}
+
+export interface CalendarPrefill {
+  contentId: string
+  title: string
+  content: string
+  platform: PlatformId
+  riskLabel: string
+}
+
+export function readCalendarPosts(): Post[] {
+  return readJson<Post[]>(KEY, [])
 }
 
 const STATUS_LABEL: Record<Post['status'], string> = {
@@ -26,8 +40,15 @@ function toMinutes(time: string): number {
   return (hour || 0) * 60 + (minute || 0)
 }
 
-export default function CalendarView() {
+export default function CalendarView({
+  prefill,
+  onPrefillConsumed,
+}: {
+  prefill: CalendarPrefill | null
+  onPrefillConsumed: () => void
+}) {
   const [posts, setPosts] = useState<Post[]>(() => readJson<Post[]>(KEY, []))
+  const [linkedCheck, setLinkedCheck] = useState<CalendarPrefill | null>(null)
   const [account, setAccount] = useState('')
   const [platform, setPlatform] = useState<PlatformId>('xhs')
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
@@ -37,7 +58,20 @@ export default function CalendarView() {
   const [status, setStatus] = useState<Post['status']>('scheduled')
   const [notice, setNotice] = useState('')
 
-  useEffect(() => writeJson(KEY, posts), [posts])
+  useEffect(() => {
+    writeJson(KEY, posts)
+  }, [posts])
+
+  useEffect(() => {
+    if (!prefill) return
+    setTitle(prefill.title)
+    setContent(prefill.content)
+    setPlatform(prefill.platform)
+    setLinkedCheck(prefill)
+    setNotice('已带入检测结果，补充账号和时间即可排期')
+    onPrefillConsumed()
+  }, [prefill, onPrefillConsumed])
+
   useEffect(() => {
     if (!notice) return
     const timer = window.setTimeout(() => setNotice(''), 2600)
@@ -74,6 +108,8 @@ export default function CalendarView() {
       ...prev,
       {
         id: makeId('post'),
+        contentId: linkedCheck?.contentId,
+        sourceRisk: linkedCheck?.riskLabel,
         account: account.trim(),
         platform,
         date,
@@ -85,6 +121,7 @@ export default function CalendarView() {
     ])
     setTitle('')
     setContent('')
+    setLinkedCheck(null)
     setNotice('已加入排期')
   }
 
@@ -156,6 +193,9 @@ export default function CalendarView() {
                   <div className="calendar-copy">
                     <strong>{post.title}</strong>
                     <span>{post.account} · {PLATFORMS.find((item) => item.id === post.platform)?.label}</span>
+                    {post.contentId && (
+                      <span className="linked-check">来自检测 · {post.sourceRisk ?? '已关联'}</span>
+                    )}
                   </div>
                   <span className="status-pill">{STATUS_LABEL[post.status]}</span>
                   <button type="button" className="btn btn-ghost btn-small" onClick={() => setPosts((prev) => prev.filter((item) => item.id !== post.id))}>删除</button>
