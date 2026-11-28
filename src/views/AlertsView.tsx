@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { normalizeText } from '../lib/detector'
 import { makeId, readJson, writeJson } from '../lib/storage'
 
 const KEY = 'operations-publishing-hub.alerts'
@@ -15,7 +16,8 @@ interface AlertItem {
 }
 
 function isNegative(content: string): boolean {
-  return NEGATIVE_WORDS.some((word) => content.includes(word))
+  const normalized = normalizeText(content)
+  return NEGATIVE_WORDS.some((word) => normalized.includes(normalizeText(word)))
 }
 
 export default function AlertsView() {
